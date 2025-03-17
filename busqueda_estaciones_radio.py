@@ -1,60 +1,75 @@
 import random
 
-def busqueda_avida_global(estaciones, estados_necesarios):
+# Búsqueda global
+def busqueda_avida_global(stations, needed_states):
     """ Búsqueda Ávida Global: Selecciona siempre la estación con mayor cobertura. """
-    estaciones_seleccionadas = set()
-    estados_restantes = estados_necesarios.copy() 
-    
-    while estados_restantes:
-        mejor_estacion = max(estaciones, key=lambda e: len(estaciones[e] & estados_restantes), default=None)
-        if not mejor_estacion:
+    selected_stations = set()
+    remaining_states = needed_states.copy()
+
+    while remaining_states:
+        best_station = max(stations, key=lambda station: len(stations[station] & remaining_states), default=None)
+        if not best_station:
             break
-        estaciones_seleccionadas.add(mejor_estacion)
-        estados_restantes -= estaciones[mejor_estacion]
-    
-    return estaciones_seleccionadas
+        selected_stations.add(best_station)
+        remaining_states -= stations[best_station]
 
-def busqueda_avida_local(estaciones, estados_necesarios, iteraciones=100):
-    """ Búsqueda Ávida Local: Realiza múltiples intentos aleatorios y guarda la mejor solución. """
-    mejor_solucion = busqueda_avida_global(estaciones, estados_necesarios)  # Solución inicial válida
-    
-    for _ in range(iteraciones):
-        estaciones_seleccionadas = set()
-        estados_restantes = estados_necesarios.copy()  # Asegurar que se reinicia en cada intento
-        
-        # Empezamos seleccionando estaciones de forma aleatoria
-        estaciones_aleatorias = random.sample(list(estaciones.keys()), len(estaciones))
-        
-        while estados_restantes:
-            # Se elige aleatoriamente una estación que cubra los estados restantes
-            estaciones_posibles = [estacion for estacion in estaciones_aleatorias if estados_restantes & estaciones[estacion]]
-            
-            if not estaciones_posibles:
-                break
-            
-            estacion_elegida = random.choice(estaciones_posibles)  # Elegir una estación aleatoria entre las posibles
-            estaciones_seleccionadas.add(estacion_elegida)
-            estados_restantes -= estaciones[estacion_elegida]  # Restar los estados cubiertos
-        
-        # Guardar solo si cubre todos los estados y usa menos estaciones
-        if not estados_restantes and len(estaciones_seleccionadas) < len(mejor_solucion):
-            mejor_solucion = estaciones_seleccionadas
-    
-    return mejor_solucion
+    return selected_stations
 
-# Definir estaciones y estados cubiertos
-estaciones = {
-    "kone": {"ID", "NV", "UT"}, "ktwo": {"WA", "ID", "MT"}, "kthree": {"OR", "NV", "CA"},
-    "kfour": {"NV", "UT"}, "kfive": {"CA", "AZ"}, "ksix": {"NM", "TX", "OK"},
-    "ksiete": {"OK", "KS", "CO"}, "kocho": {"KS", "CO", "NE"}, "knueve": {"NE", "SD", "WY"},
-    "kdiez": {"ND", "IA"}, "konce": {"MN", "MO", "AR"}, "kdoce": {"LA"}, "ktrece": {"MO", "AR"}
+# Búsqueda local
+def greedy_search_local(stations, needed_states):
+    NUM_SEARCHES = 5  # Número de búsquedas locales
+    best_solution = None  # Mejor solución encontrada
+    best_coverage = 0  # Mejor cobertura encontrada
+    
+    for _ in range(NUM_SEARCHES):
+        covered_states = set()  # Estados cubiertos en este intento
+        selected_stations = set()  # Estaciones seleccionadas en este intento
+        
+        # Selección aleatoria de estaciones
+        random_stations = random.sample(list(stations.keys()), len(stations))  # Se seleccionan todas las estaciones
+        
+        for station in random_stations:
+            covered_states |= stations[station]  # Añadir estados cubiertos por la estación seleccionada
+            selected_stations.add(station)  # Agregar la estación al conjunto de estaciones seleccionadas
+        
+        # Verificar cuántos estados están cubiertos
+        uncovered_states = len(needed_states - covered_states)
+        
+        # Guardar la mejor solución si cubre todos los estados
+        if uncovered_states == 0 and (best_solution is None or len(selected_stations) < len(best_solution)):
+            best_solution = selected_stations
+            best_coverage = len(covered_states)
+    
+    return best_solution, best_coverage
+
+# Lista de estaciones
+stations = {
+    "kone": {"ID", "NV", "UT"},
+    "ktwo": {"WA", "ID", "MT"},
+    "kthree": {"OR", "NV", "CA"},
+    "kfour": {"NV", "UT"},
+    "kfive": {"CA", "AZ"},
+    "ksix": {"NM", "TX", "OK"},
+    "kseven": {"OK", "KS", "CO"},
+    "keight": {"KS", "CO", "NE"},
+    "knine": {"NE", "SD", "WY"},
+    "kten": {"ND", "IA"},
+    "keleven": {"MN", "MO", "AR"},
+    "ktwelve": {"LA"},
+    "kthirteen": {"MO", "AR"}
 }
 
-estados_necesarios = set.union(*estaciones.values())
+needed_states = set.union(*stations.values())
 
-# Ejecutar algoritmos
-resultado_global = busqueda_avida_global(estaciones, estados_necesarios)
-resultado_local = busqueda_avida_local(estaciones, estados_necesarios)
+# Ejecutar búsqueda global
+global_result = busqueda_avida_global(stations, needed_states)
 
-print("\nBúsqueda Ávida Global - Estaciones seleccionadas:", resultado_global)
-print("\nBúsqueda Ávida Local - Estaciones seleccionadas:", resultado_local)
+# Ejecutar búsqueda local 
+best_solution, best_coverage = greedy_search_local(stations, needed_states)
+
+# Imprimir resultados
+
+print("\nBúsqueda Ávida Global - Estaciones seleccionadas:", global_result)
+
+print("\nBúsqueda Ávida Local Aleatoria - Estaciones seleccionadas:", best_solution)
+print("Cobertura de estados:", best_coverage)
